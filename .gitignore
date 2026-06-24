@@ -25,3 +25,36 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# ============================================
+# ML / Data Science (added by Member 2)
+# ============================================
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Raw PDAD dataset — DO NOT COMMIT (contains PII)
+ml/data/raw/
+ml/data/*.xlsx
+
+# ML outputs and logs
+ml/outputs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
