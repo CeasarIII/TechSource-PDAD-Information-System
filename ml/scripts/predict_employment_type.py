@@ -12,9 +12,6 @@ Output (stdout):
 
 Author: Prince (ML Lead)
 """
-import warnings
-warnings.filterwarnings('ignore', category=UserWarning)
-warnings.filterwarnings('ignore', category=FutureWarning)
 import sys
 import json
 import os
