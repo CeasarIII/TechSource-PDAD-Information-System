@@ -3,37 +3,51 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['pwd', 'employer', 'admin'])
-                ->default('pwd');
+        if (!Schema::hasColumn('users', 'role')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->enum('role', ['pwd', 'employer', 'admin'])
+                    ->default('pwd')
+                    ->after('password');
+            });
+        }
 
-            $table->string('account_status')
-                ->default('active');
+        if (!Schema::hasColumn('users', 'account_status')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->enum('account_status', ['pending', 'active', 'rejected'])
+                    ->default('pending')
+                    ->after('role');
+            });
+        }
 
-            $table->boolean('terms_accepted')
-                ->default(false);
-        });
+        if (!Schema::hasColumn('users', 'terms_accepted')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('terms_accepted')
+                    ->default(false)
+                    ->after('account_status');
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'role',
-                'account_status',
-                'terms_accepted'
-            ]);
+            if (Schema::hasColumn('users', 'terms_accepted')) {
+                $table->dropColumn('terms_accepted');
+            }
+
+            if (Schema::hasColumn('users', 'account_status')) {
+                $table->dropColumn('account_status');
+            }
+
+            if (Schema::hasColumn('users', 'role')) {
+                $table->dropColumn('role');
+            }
         });
     }
 };

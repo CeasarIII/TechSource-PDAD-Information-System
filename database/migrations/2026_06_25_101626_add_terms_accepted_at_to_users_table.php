@@ -6,22 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('terms_accepted_at')
-                ->nullable()
-                ->after('terms_accepted');
-        });
+        if (!Schema::hasColumn('users', 'terms_accepted_at')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->timestamp('terms_accepted_at')
+                    ->nullable()
+                    ->after('terms_accepted');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('terms_accepted_at');
-        });
+        if (Schema::hasColumn('users', 'terms_accepted_at')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('terms_accepted_at');
+            });
+        }
     }
 };
