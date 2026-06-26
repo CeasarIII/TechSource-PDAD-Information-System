@@ -8,31 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('job_recommendations', function (Blueprint $table) {
+        Schema::create('employment_predictions', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('pwd_profile_id')
+                ->unique()
                 ->constrained('pwd_profiles')
                 ->cascadeOnDelete();
 
-            $table->foreignId('job_post_id')
-                ->constrained('job_posts')
-                ->cascadeOnDelete();
+            $table->string('predicted_type', 50);
 
-            $table->decimal('similarity_score', 5, 4);
-            $table->unsignedTinyInteger('rank_position');
-            $table->string('recommendation_reason', 255)->nullable();
+            $table->decimal('confidence', 5, 4);
+
+            $table->json('all_probabilities');
+
             $table->timestamp('generated_at');
 
             $table->timestamps();
 
-            $table->index(['pwd_profile_id', 'rank_position']);
             $table->index('generated_at');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('job_recommendations');
+        Schema::dropIfExists('employment_predictions');
     }
 };
