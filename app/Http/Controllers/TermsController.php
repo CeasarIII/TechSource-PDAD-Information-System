@@ -9,7 +9,7 @@ class TermsController extends Controller
 {
     public function show()
     {
-        return view('terms');
+        return view('terms.show');
     }
 
     public function accept(Request $request)
