@@ -39,7 +39,7 @@ class EmploymentPredictionService
 
         $result = json_decode($output, true);
 
-        if (!$result) {
+        if ($result === null) {
             throw new Exception('Invalid JSON returned from Python: ' . $output);
         }
 
