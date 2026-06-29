@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TermsController;
 use App\Http\Controllers\PwdValidationController;
 use App\Http\Controllers\PwdProfileController;
+use App\Http\Controllers\ApplicantSkillController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,6 +36,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('/pwd/profile', PwdProfileController::class)
         ->only(['create', 'store', 'edit', 'update'])
         ->names('pwd.profile');
+
+    Route::post('/pwd/skills', [ApplicantSkillController::class, 'store'])
+        ->name('pwd.skills.store');
+
+    Route::delete('/pwd/skills/{skill}', [ApplicantSkillController::class, 'destroy'])
+        ->name('pwd.skills.destroy');
 });
 
 Route::get('/pwd/dashboard', function () {
