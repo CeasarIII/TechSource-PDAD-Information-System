@@ -30,4 +30,9 @@ class PwdProfile extends Model
     {
         return $this->belongsTo(PwdRegistryReference::class, 'pwd_registry_id');
     }
+
+    public function employmentPrediction()
+    {
+        return $this->hasOne(EmploymentPrediction::class, 'pwd_profile_id');
+    }
 }

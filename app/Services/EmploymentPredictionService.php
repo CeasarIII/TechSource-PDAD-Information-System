@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\EmploymentPrediction;
+use App\Models\PwdProfile;
 use Exception;
 
 class EmploymentPredictionService
@@ -9,7 +11,6 @@ class EmploymentPredictionService
     public function predict(array $profile): array
     {
         $script = base_path('ml/scripts/predict_employment_type.py');
-
         $payload = json_encode($profile);
 
         $process = proc_open(
@@ -46,6 +47,40 @@ class EmploymentPredictionService
         if (isset($result['error'])) {
             throw new Exception('Prediction error: ' . $result['error']);
         }
+
+        return $result;
+    }
+
+    public function predictForProfile(PwdProfile $profile): array
+    {
+        $profile->load(['skills', 'registryReference']);
+
+        $registry = $profile->registryReference;
+
+        $payload = [
+            'age' => $registry->age ?? 35,
+            'sex' => $registry->sex ?? 'Male',
+            'civil_status' => $registry->civil_status ?? 'Single',
+            'disability_type' => $registry->disability_type ?? 'Visual Disability',
+            'disability_visibility' => $registry->disability_visibility ?? 'Apparent',
+            'cause_of_disability' => $registry->cause_of_disability ?? 'Acquired',
+            'educational_attainment' => $registry->educational_attainment ?? $profile->education ?? 'College Graduate',
+            'skills' => $profile->skills->pluck('skill_name')->implode(', ') ?: 'Computer data encoding',
+            'mobility_status' => $registry->mobility_status ?? 'Independent',
+            'current_assistive_device' => $registry->current_assistive_device ?? 'None',
+            'occupation_group' => $registry->occupation_group ?? 'Clerical Support Workers',
+        ];
+
+        $result = $this->predict($payload);
+
+        EmploymentPrediction::updateOrCreate(
+            ['pwd_profile_id' => $profile->id],
+            [
+                'predicted_employment_type' => $result['predicted_type'],
+                'confidence_score' => $result['confidence'],
+                'model_version' => 'rf_model_v1',
+            ]
+        );
 
         return $result;
     }

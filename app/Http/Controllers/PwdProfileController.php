@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\PwdProfile;
 use App\Models\PwdRegistryReference;
+use App\Services\EmploymentPredictionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PwdProfileController extends Controller
 {
@@ -36,7 +38,9 @@ class PwdProfileController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['profile_completed'] = $this->computeCompleteness($validated);
 
-        PwdProfile::create($validated);
+        $profile = PwdProfile::create($validated);
+
+        $this->runPredictionIfReady($profile);
 
         return redirect('/pwd/dashboard')->with('success', 'Profile saved successfully.');
     }
@@ -71,6 +75,8 @@ class PwdProfileController extends Controller
 
         $profile->update($validated);
 
+        $this->runPredictionIfReady($profile->fresh());
+
         return redirect('/pwd/dashboard')->with('success', 'Profile updated successfully.');
     }
 
@@ -88,5 +94,18 @@ class PwdProfileController extends Controller
             ->count();
 
         return $filled === count($requiredFields) ? 1 : 0;
+    }
+
+    private function runPredictionIfReady(PwdProfile $profile): void
+    {
+        if (!$profile->profile_completed) {
+            return;
+        }
+
+        try {
+            app(EmploymentPredictionService::class)->predictForProfile($profile);
+        } catch (\Exception $e) {
+            Log::warning('Prediction skipped: ' . $e->getMessage());
+        }
     }
 }

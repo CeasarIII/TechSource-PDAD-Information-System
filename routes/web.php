@@ -45,7 +45,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/pwd/dashboard', function () {
-    return view('pwd.dashboard');
+    $profile = auth()->user()->pwdProfile;
+    $prediction = $profile?->employmentPrediction;
+
+    return view('pwd.dashboard', compact('profile', 'prediction'));
 })->middleware(['auth']);
 
 Route::get('/employer/dashboard', function () {
