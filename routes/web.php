@@ -24,6 +24,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('/pwd/profile/edit', [PwdProfileController::class, 'editOwn'])
+        ->name('pwd.profile.edit-own');
+
     Route::post('/terms/accept', [TermsController::class, 'accept'])
         ->name('terms.accept');
 

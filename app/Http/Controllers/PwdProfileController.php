@@ -24,6 +24,17 @@ class PwdProfileController extends Controller
         return view('pwd.profile.create', compact('registryReferences'));
     }
 
+    public function editOwn()
+    {
+        $profile = Auth::user()->pwdProfile;
+
+        if (!$profile) {
+            return redirect()->route('pwd.profile.create');
+        }
+
+        return redirect()->route('pwd.profile.edit', $profile->id);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
