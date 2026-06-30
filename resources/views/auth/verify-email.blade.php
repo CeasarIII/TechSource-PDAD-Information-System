@@ -1,31 +1,51 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - PDAD Employment Portal</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
 
-    @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
-        </div>
-    @endif
+<body>
+    <div class="min-h-screen bg-slate-100 flex items-center justify-center px-6 py-12">
+        <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 text-center">
+            <img src="{{ asset('images/pdad_logo.jpg') }}" alt="PDAD Logo" class="w-20 h-20 mx-auto rounded-full object-contain bg-white mb-6">
 
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
-
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-blue-50 flex items-center justify-center text-4xl mb-6">
+                ✉️
             </div>
-        </form>
 
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
+            <h1 class="text-3xl font-extrabold text-[#003b6f]">
+                Verify your email
+            </h1>
 
-            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                {{ __('Log Out') }}
-            </button>
-        </form>
+            <p class="text-slate-500 mt-4 leading-7">
+                Thanks for registering with the PDAD Employment Portal. Before continuing, please verify your email address by clicking the link we sent to your inbox.
+            </p>
+
+            @if (session('status') == 'verification-link-sent')
+                <div class="mt-6 rounded-xl bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
+                    A new verification link has been sent to your email address.
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('verification.send') }}" class="mt-8">
+                @csrf
+
+                <button type="submit" class="w-full min-h-[52px] rounded-xl bg-[#003b6f] text-white font-extrabold hover:bg-[#002f59] transition shadow-lg">
+                    Resend verification email
+                </button>
+            </form>
+
+            <form method="POST" action="{{ route('logout') }}" class="mt-4">
+                @csrf
+
+                <button type="submit" class="w-full min-h-[52px] rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 transition">
+                    Log out
+                </button>
+            </form>
+        </div>
     </div>
-</x-guest-layout>
+</body>
+</html>

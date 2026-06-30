@@ -11,15 +11,63 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Terms
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/terms', [TermsController::class, 'show'])
     ->middleware(['auth'])
     ->name('terms.show');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Main Dashboard Redirect
+|--------------------------------------------------------------------------
+*/
 
-Route::middleware('auth')->group(function () {
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+
+    if ($user->role === 'pwd') {
+        return redirect()->route('pwd.dashboard');
+    }
+
+    if ($user->role === 'employer') {
+        return redirect()->route('employer.dashboard');
+    }
+
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    return redirect('/');
+})->middleware(['auth'])->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/pwd/dashboard', function () {
+        $profile = auth()->user()->pwdProfile;
+        $prediction = $profile?->employmentPrediction;
+
+        return view('pwd.dashboard', compact('profile', 'prediction'));
+    })->name('pwd.dashboard');
+
+    Route::get('/employer/dashboard', function () {
+        return view('employer.dashboard');
+    })->name('employer.dashboard');
+
+    Route::get('/admin/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('admin.dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -46,20 +94,5 @@ Route::middleware('auth')->group(function () {
     Route::delete('/pwd/skills/{skill}', [ApplicantSkillController::class, 'destroy'])
         ->name('pwd.skills.destroy');
 });
-
-Route::get('/pwd/dashboard', function () {
-    $profile = auth()->user()->pwdProfile;
-    $prediction = $profile?->employmentPrediction;
-
-    return view('pwd.dashboard', compact('profile', 'prediction'));
-})->middleware(['auth']);
-
-Route::get('/employer/dashboard', function () {
-    return view('employer.dashboard');
-})->middleware(['auth']);
-
-Route::get('/admin/dashboard', function () {
-    return view('admin.dashboard');
-})->middleware(['auth']);
 
 require __DIR__ . '/auth.php';
