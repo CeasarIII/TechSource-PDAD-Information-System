@@ -35,4 +35,9 @@ class PwdProfile extends Model
     {
         return $this->hasOne(EmploymentPrediction::class, 'pwd_profile_id');
     }
+
+    public function applications()
+    {
+        return $this->hasMany(Application::class, 'pwd_profile_id');
+    }
 }

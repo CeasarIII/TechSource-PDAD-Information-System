@@ -31,6 +31,11 @@ class User extends Authenticatable
         return $this->hasOne(PwdProfile::class);
     }
 
+    public function employer(): HasOne
+    {
+        return $this->hasOne(Employer::class);
+    }
+
     protected function casts(): array
     {
         return [
