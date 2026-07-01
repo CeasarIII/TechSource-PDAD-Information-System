@@ -60,3 +60,6 @@ Thumbs.db
 *.swp
 
 database/seeders/data/
+
+backups/
+*.sql
