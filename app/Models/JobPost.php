@@ -26,4 +26,9 @@ class JobPost extends Model
     {
         return $this->hasMany(Application::class, 'job_post_id');
     }
+
+    public function recommendations()
+    {
+        return $this->hasMany(JobRecommendation::class, 'job_post_id');
+    }
 }

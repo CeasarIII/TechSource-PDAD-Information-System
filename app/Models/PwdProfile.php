@@ -40,4 +40,9 @@ class PwdProfile extends Model
     {
         return $this->hasMany(Application::class, 'pwd_profile_id');
     }
+
+    public function jobRecommendations()
+    {
+        return $this->hasMany(JobRecommendation::class, 'pwd_profile_id');
+    }
 }
