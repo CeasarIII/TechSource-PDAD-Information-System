@@ -10,6 +10,7 @@ use App\Http\Controllers\PwdValidationController;
 use App\Http\Controllers\TermsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SavedJobController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -67,12 +68,28 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/jobs', function () {
         $jobs = \App\Models\JobPost::where('status', 'open')
-            ->with('employer')
             ->latest()
             ->get();
 
-        return view('jobs.index', compact('jobs'));
+        $profile = auth()->user()->pwdProfile;
+
+        $savedJobIds = $profile
+            ? \App\Models\SavedJob::where('pwd_profile_id', $profile->id)
+            ->pluck('job_post_id')
+            ->toArray()
+            : [];
+
+        return view('jobs.index', compact('jobs', 'savedJobIds'));
     })->name('jobs.index');
+
+    Route::get('/saved-jobs', [SavedJobController::class, 'index'])
+        ->name('saved-jobs.index');
+
+    Route::post('/jobs/{job}/save', [SavedJobController::class, 'store'])
+        ->name('saved-jobs.store');
+
+    Route::delete('/jobs/{job}/save', [SavedJobController::class, 'destroy'])
+        ->name('saved-jobs.destroy');
 
     Route::post('/jobs/{job}/apply', [ApplicationController::class, 'apply'])->name('applications.apply');
 
