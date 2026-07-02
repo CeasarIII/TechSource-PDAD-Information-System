@@ -97,3 +97,18 @@ powershell.exe
 ```
 -ExecutionPolicy Bypass -File "<Project Folder>\scripts\backup_database.ps1"
 ```
+
+---
+
+# Restoration Test Results
+
+Date tested: 2026-07-01  
+Tester: Member 3  
+Result: PASS
+
+## Test Summary
+
+A fresh backup was created using:
+
+```powershell
+.\scripts\backup_database.ps1

@@ -6,9 +6,17 @@ The TechSource PDAD Information System uses MySQL as its primary relational data
 
 The database follows relational database principles with normalized tables, primary keys, foreign keys, indexing strategies, SQL views, and soft delete support to maintain data integrity while improving system performance.
 
+MySQL was selected as the database management system because of its reliability, open-source ecosystem, seamless integration with the Laravel framework, and widespread adoption in educational institutions, local government units (LGUs), and enterprise environments in the Philippines. Its support for relational integrity, indexing, transactions, and scalability makes it suitable for managing the interconnected modules of the TechSource PDAD Information System while maintaining high data consistency and performance.
+
 ---
 
 # 3.X.1 Entity Relationship Model
+
+**Figure 3.X – Entity Relationship Diagram of the TechSource PDAD Information System**
+
+*(Refer to: docs/diagrams/er_diagram_full.png)*
+
+The database schema is organized into seven functional groups to improve maintainability, scalability, and modularity. These include User Management, Reference Data, Job Marketplace, Application Workflow, Machine Learning Outputs, Training Management, and Administration and Reporting. The relationships among these entities ensure that data flows consistently throughout the employment matching process while preserving referential integrity.
 
 The database consists of several major entity groups:
 
@@ -128,3 +136,27 @@ Security measures include:
 # 3.X.6 Summary
 
 The database architecture supports the functional requirements of the TechSource PDAD Information System while maintaining scalability, maintainability, security, and data integrity. The combination of normalized tables, optimized indexing, reporting views, and privacy-aware design provides a reliable foundation for the employment matching platform.
+
+---
+
+# 3.X.7 Database Testing Approach
+
+The database layer of the TechSource PDAD Information System was validated using multiple testing approaches to ensure data integrity, reliability, and performance throughout development.
+
+## Schema Integrity Testing
+
+Database migrations were reviewed and verified to ensure that all tables, foreign key constraints, indexes, and reporting views were created in the correct order without dependency conflicts. Database integrity documentation is available in **docs/DATA_INTEGRITY_AUDIT.md**.
+
+## End-to-End Integration Testing
+
+Complete database workflows were validated through integration testing, covering the entire process from PWD registration, profile creation, employment prediction, job recommendation generation, application submission, and employer status updates. These scenarios are documented in **docs/UAT_TESTCASES.md** and serve as the primary User Acceptance Testing (UAT) reference for the system.
+
+## Performance Evaluation
+
+Frequently executed database queries were reviewed using indexed lookups, reporting views, and Laravel Eloquent optimization techniques. Existing indexes and reporting views were verified to support efficient retrieval of records required by both the recommender system and the administrative dashboard. Performance observations and recommendations are documented in **docs/PERFORMANCE_BASELINE.md**.
+
+## Backup and Recovery Verification
+
+Database backup procedures were documented and verified using the automated PowerShell backup script developed for the project. Recovery procedures were also documented to ensure that the database can be restored whenever necessary during demonstrations, development, or deployment. Additional information is provided in **database/BACKUP.md**.
+
+The combination of these testing strategies provides confidence that the database structure, integrity constraints, and supporting utilities are suitable for deployment, demonstration, and future system maintenance.
