@@ -1,146 +1,333 @@
 <?php
 
-use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicantSkillController;
-use App\Http\Controllers\EmployerController;
-use App\Http\Controllers\JobPostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwdProfileController;
 use App\Http\Controllers\PwdValidationController;
 use App\Http\Controllers\TermsController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\SavedJobController;
-use App\Http\Middleware\EnsureUserRole;
+use App\Models\Application;
+use App\Models\JobPost;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Terms
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/terms', [TermsController::class, 'show'])
-    ->middleware(['auth'])
+    ->middleware('auth')
     ->name('terms.show');
 
+/*
+|--------------------------------------------------------------------------
+| Dashboard Redirect
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/dashboard', function () {
+
     $user = auth()->user();
 
-    if ($user->role === 'pwd') return redirect()->route('pwd.dashboard');
-    if ($user->role === 'employer') return redirect()->route('employer.dashboard');
-    if ($user->role === 'admin') return redirect()->route('admin.dashboard');
+    return match ($user->role) {
+        'pwd'      => redirect()->route('pwd.dashboard'),
+        'employer' => redirect()->route('employer.dashboard'),
+        'admin'    => redirect()->route('admin.dashboard'),
+        default    => redirect('/'),
+    };
 
-    return redirect('/');
-})->middleware(['auth'])->name('dashboard');
+})->middleware('auth')->name('dashboard');
 
-Route::middleware(['auth'])->group(function () {
+/*
+|--------------------------------------------------------------------------
+| Protected Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboards
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/pwd/dashboard', function () {
+
         $profile = auth()->user()->pwdProfile;
         $prediction = $profile?->employmentPrediction;
 
-        return view('pwd.dashboard', compact('profile', 'prediction'));
-    })->middleware(EnsureUserRole::class . ':pwd')->name('pwd.dashboard');
+        return view('pwd.dashboard', compact(
+            'profile',
+            'prediction'
+        ));
 
-    Route::get('/employer/dashboard', [EmployerController::class, 'dashboard'])
-        ->middleware(EnsureUserRole::class . ':employer')
-        ->name('employer.dashboard');
+    })->name('pwd.dashboard');
 
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])
-        ->middleware(EnsureUserRole::class . ':admin')
-        ->name('admin.dashboard');
+    Route::get('/employer/dashboard', function () {
+        return view('employer.dashboard');
+    })->name('employer.dashboard');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/admin/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('admin.dashboard');
 
-    Route::post('/terms/accept', [TermsController::class, 'accept'])->name('terms.accept');
+    /*
+    |--------------------------------------------------------------------------
+    | PWD Pages
+    |--------------------------------------------------------------------------
+    */
 
-    Route::get('/pwd/validate', [PwdValidationController::class, 'showForm'])
-        ->middleware(EnsureUserRole::class . ':pwd')
-        ->name('pwd.validate.show');
+    Route::get('/pwd/jobs', function () {
 
-    Route::post('/pwd/validate', [PwdValidationController::class, 'validate'])
-        ->middleware([EnsureUserRole::class . ':pwd', 'throttle:10,1'])
-        ->name('pwd.validate');
-
-    Route::get('/pwd/profile/edit', [PwdProfileController::class, 'editOwn'])
-        ->middleware(EnsureUserRole::class . ':pwd')
-        ->name('pwd.profile.edit-own');
-
-    Route::resource('/pwd/profile', PwdProfileController::class)
-        ->only(['create', 'store', 'edit', 'update'])
-        ->middleware(EnsureUserRole::class . ':pwd')
-        ->names('pwd.profile');
-
-    Route::post('/pwd/skills', [ApplicantSkillController::class, 'store'])
-        ->middleware([EnsureUserRole::class . ':pwd', 'throttle:20,1'])
-        ->name('pwd.skills.store');
-
-    Route::delete('/pwd/skills/{skill}', [ApplicantSkillController::class, 'destroy'])
-        ->middleware([EnsureUserRole::class . ':pwd', 'throttle:20,1'])
-        ->name('pwd.skills.destroy');
-
-    Route::post('/pwd/skills', [ApplicantSkillController::class, 'store'])->name('pwd.skills.store');
-    Route::delete('/pwd/skills/{skill}', [ApplicantSkillController::class, 'destroy'])->name('pwd.skills.destroy');
-
-    Route::resource('/employer/jobs', JobPostController::class)
-        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-        ->middleware(EnsureUserRole::class . ':employer')
-        ->names('employer.jobs');
-
-    Route::get('/jobs', function () {
-        $jobs = \App\Models\JobPost::where('status', 'open')
+        $jobs = JobPost::whereIn('status', ['open', 'active'])
             ->latest()
             ->get();
 
+        return view('pwd.jobs', compact('jobs'));
+
+    })->name('pwd.jobs');
+
+    Route::get('/pwd/applications', function () {
+
         $profile = auth()->user()->pwdProfile;
 
-        $savedJobIds = $profile
-            ? \App\Models\SavedJob::where('pwd_profile_id', $profile->id)
-            ->pluck('job_post_id')
-            ->toArray()
-            : [];
+        $applications = collect();
 
-        return view('jobs.index', compact('jobs', 'savedJobIds'));
-    })->middleware(EnsureUserRole::class . ':pwd')->name('jobs.index');
+        if ($profile) {
+            $applications = Application::with('jobPost')
+                ->where('pwd_profile_id', $profile->id)
+                ->latest()
+                ->get();
+        }
 
-    Route::get('/saved-jobs', [SavedJobController::class, 'index'])
-        ->middleware(EnsureUserRole::class . ':pwd')
-        ->name('saved-jobs.index');
+        return view('pwd.applications', compact('applications'));
 
-    Route::post('/jobs/{job}/save', [SavedJobController::class, 'store'])
-        ->name('saved-jobs.store');
+    })->name('pwd.applications');
 
-    Route::delete('/jobs/{job}/save', [SavedJobController::class, 'destroy'])
-        ->middleware([EnsureUserRole::class . ':pwd', 'throttle:20,1'])
-        ->name('saved-jobs.destroy');
+    Route::get('/pwd/resume', function () {
+        return view('pwd.resume');
+    })->name('pwd.resume');
 
-    Route::post('/jobs/{job}/apply', [ApplicationController::class, 'apply'])
-        ->middleware([EnsureUserRole::class . ':pwd', 'throttle:10,1'])
-        ->name('applications.apply');
+    Route::get('/pwd/trainings', function () {
+        return view('pwd.trainings');
+    })->name('pwd.trainings');
 
-    Route::get('/employer/applications', [ApplicationController::class, 'employerIndex'])
-        ->middleware(EnsureUserRole::class . ':employer')
-        ->name('employer.applications.index');
+    /*
+    |--------------------------------------------------------------------------
+    | Button Actions
+    |--------------------------------------------------------------------------
+    */
 
-    Route::patch('/employer/applications/{application}', [ApplicationController::class, 'updateStatus'])
-        ->middleware([EnsureUserRole::class . ':employer', 'throttle:20,1'])
-        ->name('employer.applications.update');
+    Route::post('/pwd/jobs/apply', function () {
 
-    Route::get('/notifications', [NotificationController::class, 'index'])
-        ->name('notifications.index');
+        $user = auth()->user();
+        $profile = $user->pwdProfile;
 
-    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
-        ->name('notifications.read');
+        if (!$profile) {
+            return redirect()
+                ->route('pwd.profile.create')
+                ->with('success', 'Please complete your profile first.');
+        }
 
-    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
-        ->name('notifications.readAll');
-});
+        $job = JobPost::findOrFail(request('job_post_id'));
 
-Route::middleware('guest')->group(function () {
-    Route::get('/employer/register', [EmployerController::class, 'showRegistration'])
-        ->name('employer.register');
+        $application = Application::firstOrCreate(
+            [
+                'pwd_profile_id' => $profile->id,
+                'job_post_id' => $job->id,
+            ],
+            [
+                'status' => 'applied',
+                'applied_at' => now(),
+                'status_updated_at' => now(),
+            ]
+        );
 
-    Route::post('/employer/register', [EmployerController::class, 'register']);
+        if (! $application->wasRecentlyCreated) {
+            return redirect()
+                ->route('pwd.applications')
+                ->with('success', 'You already applied for this job.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Employer Notification
+        |--------------------------------------------------------------------------
+        */
+
+        $employer = DB::table('employers')
+            ->where('id', $job->employer_id)
+            ->first();
+
+        if ($employer) {
+            DB::table('notifications')->insert([
+                'user_id' => $employer->user_id,
+                'type' => 'job_application',
+                'title' => 'New Job Application',
+                'message' => $user->name . ' applied for ' . $job->job_title . '.',
+                'data' => json_encode([
+                    'application_id' => $application->id,
+                    'job_post_id' => $job->id,
+                    'job_title' => $job->job_title,
+                    'pwd_profile_id' => $profile->id,
+                    'applicant_name' => $user->name,
+                ]),
+                'read_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $employerUser = DB::table('users')
+                ->where('id', $employer->user_id)
+                ->first();
+
+            if ($employerUser && ! empty($employerUser->email)) {
+                try {
+                    Mail::raw(
+                        "Hello " . ($employer->contact_person ?? 'Employer') . ",\n\n" .
+                        $user->name . " applied for your job post: " . $job->job_title . ".\n\n" .
+                        "Applicant Email: " . $user->email . "\n" .
+                        "Application Status: Applied\n\n" .
+                        "Please check the PDAD Employer Dashboard for application details.\n\n" .
+                        "Thank you,\nPDAD Employment Matching System",
+                        function ($message) use ($employerUser, $job) {
+                            $message->to($employerUser->email)
+                                ->subject('New Job Application - ' . $job->job_title);
+                        }
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Employer application email failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PWD Applicant Notification
+        |--------------------------------------------------------------------------
+        */
+
+        DB::table('notifications')->insert([
+            'user_id' => $user->id,
+            'type' => 'application_submitted',
+            'title' => 'Application Submitted',
+            'message' => 'Your application for ' . $job->job_title . ' was submitted successfully.',
+            'data' => json_encode([
+                'application_id' => $application->id,
+                'job_post_id' => $job->id,
+                'job_title' => $job->job_title,
+            ]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        if (! empty($user->email)) {
+            try {
+                Mail::raw(
+                    "Hello " . $user->name . ",\n\n" .
+                    "Your application for " . $job->job_title . " has been submitted successfully.\n\n" .
+                    "Application Status: Applied\n" .
+                    "Location: " . ($job->location ?? 'Not specified') . "\n" .
+                    "Employment Type: " . ($job->employment_type ?? 'Not specified') . "\n\n" .
+                    "Thank you,\nPDAD Employment Matching System",
+                    function ($message) use ($user, $job) {
+                        $message->to($user->email)
+                            ->subject('Application Submitted - ' . $job->job_title);
+                    }
+                );
+            } catch (\Throwable $e) {
+                Log::warning('PWD application email failed: ' . $e->getMessage());
+            }
+        }
+
+        return redirect()
+            ->route('pwd.applications')
+            ->with('success', 'Application submitted successfully.');
+
+    })->name('pwd.jobs.apply');
+
+    Route::post('/pwd/trainings/enroll', function () {
+
+        return redirect()
+            ->route('pwd.trainings')
+            ->with('success', 'Successfully enrolled in training.');
+
+    })->name('pwd.trainings.enroll');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel Profile
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | PWD Profile
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/pwd/profile/edit', [PwdProfileController::class, 'editOwn'])
+        ->name('pwd.profile.edit-own');
+
+    Route::resource('/pwd/profile', PwdProfileController::class)
+        ->only([
+            'create',
+            'store',
+            'edit',
+            'update',
+        ])
+        ->names('pwd.profile');
+
+    /*
+    |--------------------------------------------------------------------------
+    | PWD Validation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/pwd/validate', [PwdValidationController::class, 'showForm'])
+        ->name('pwd.validate.show');
+
+    Route::post('/pwd/validate', [PwdValidationController::class, 'validate'])
+        ->name('pwd.validate');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Skills
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/pwd/skills', [ApplicantSkillController::class, 'store'])
+        ->name('pwd.skills.store');
+
+    Route::delete('/pwd/skills/{skill}', [ApplicantSkillController::class, 'destroy'])
+        ->name('pwd.skills.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Terms
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/terms/accept', [TermsController::class, 'accept'])
+        ->name('terms.accept');
 });
 
 require __DIR__ . '/auth.php';

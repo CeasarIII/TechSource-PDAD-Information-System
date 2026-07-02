@@ -3,27 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Application extends Model
 {
-    protected $table = 'applications';
-
-    protected $guarded = [];
-
-    protected $casts = [
-        'applied_at' => 'datetime',
-        'status_updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+    protected $fillable = [
+        'pwd_profile_id',
+        'job_post_id',
+        'status',
+        'applicant_message',
+        'employer_notes',
+        'applied_at',
+        'status_updated_at',
     ];
 
-    public function pwdProfile(): BelongsTo
+    public function jobPost()
     {
-        return $this->belongsTo(PwdProfile::class, 'pwd_profile_id');
+        return $this->belongsTo(JobPost::class);
     }
 
-    public function jobPost(): BelongsTo
+    public function profile()
     {
-        return $this->belongsTo(JobPost::class, 'job_post_id');
+        return $this->belongsTo(PwdProfile::class,'pwd_profile_id');
     }
 }

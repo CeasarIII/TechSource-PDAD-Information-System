@@ -28,25 +28,17 @@ class PwdProfile extends Model
 
     public function registryReference(): BelongsTo
     {
-        return $this->belongsTo(
-            \App\Models\PwdRegistryReference::class,
-            'registry_reference_id',
-            'id'
-        );
+        return $this->belongsTo(PwdRegistryReference::class, 'pwd_registry_id');
     }
 
     public function employmentPrediction()
-    {
-        return $this->hasOne(EmploymentPrediction::class, 'pwd_profile_id');
-    }
-
-    public function applications()
-    {
-        return $this->hasMany(Application::class, 'pwd_profile_id');
-    }
-
-    public function jobRecommendations()
-    {
-        return $this->hasMany(JobRecommendation::class, 'pwd_profile_id');
-    }
+{
+    return $this->hasOne(EmploymentPrediction::class, 'pwd_profile_id');
 }
+
+public function applications()
+{
+    return $this->hasMany(Application::class);
+}
+}
+
