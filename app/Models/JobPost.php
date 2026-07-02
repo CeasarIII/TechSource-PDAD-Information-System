@@ -31,4 +31,13 @@ class JobPost extends Model
     {
         return $this->hasMany(JobRecommendation::class, 'job_post_id');
     }
+
+    public function disabilityCompatibility(): HasMany
+    {
+        return $this->hasMany(
+            \App\Models\JobDisabilityCompatibility::class,
+            'job_post_id',
+            'id'
+        );
+    }
 }

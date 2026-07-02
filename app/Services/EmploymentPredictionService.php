@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
 use App\Models\EmploymentPrediction;
 use App\Models\PwdProfile;
 use Exception;
@@ -76,11 +77,26 @@ class EmploymentPredictionService
         EmploymentPrediction::updateOrCreate(
             ['pwd_profile_id' => $profile->id],
             [
-                'predicted_employment_type' => $result['predicted_type'],
-                'confidence_score' => $result['confidence'],
-                'model_version' => 'rf_model_v1',
+                'predicted_type' => $result['predicted_type'],
+                'confidence' => $result['confidence'],
+                'all_probabilities' => isset($result['all_probabilities'])
+                    ? json_encode($result['all_probabilities'])
+                    : null,
+                'generated_at' => now(),
             ]
         );
+
+        try {
+            app(RecommendationService::class)->generateForProfile($profile->fresh());
+        } catch (\Exception $e) {
+            Log::warning('Recommendation skipped: ' . $e->getMessage());
+        }
+
+        try {
+            app(RecommendationService::class)->generateForProfile($profile->fresh());
+        } catch (\Exception $e) {
+            Log::warning('Recommendation skipped: ' . $e->getMessage());
+        }
 
         return $result;
     }

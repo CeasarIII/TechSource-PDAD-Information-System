@@ -28,7 +28,11 @@ class PwdProfile extends Model
 
     public function registryReference(): BelongsTo
     {
-        return $this->belongsTo(PwdRegistryReference::class, 'pwd_registry_id');
+        return $this->belongsTo(
+            \App\Models\PwdRegistryReference::class,
+            'registry_reference_id',
+            'id'
+        );
     }
 
     public function employmentPrediction()

@@ -14,14 +14,16 @@ class RecommendationService
     {
         $profile->load(['skills', 'registryReference']);
 
-        $prediction = EmploymentPrediction::where('pwd_profile_id', $profile->id)->first();
+        $prediction = EmploymentPrediction::where('pwd_profile_id', $profile->id)
+            ->latest('generated_at')
+            ->first();
 
         if (!$prediction) {
             throw new Exception('Generate employment prediction first.');
         }
 
         $availableJobs = JobPost::where('status', 'open')
-            ->with('skills')
+            ->with(['skills', 'disabilityCompatibility'])
             ->get()
             ->map(function ($job) {
                 return [
@@ -30,9 +32,14 @@ class RecommendationService
                     'job_description' => $job->job_description,
                     'required_skills' => $job->skills->pluck('skill_name')->implode(', '),
                     'employment_type' => $job->employment_type,
-                    'required_education' => '',
-                    'disability_friendly_notes' => '',
-                    'compatible_disabilities' => [],
+                    'required_education' => $job->required_education ?? '',
+                    'location' => $job->location ?? '',
+                    'disability_friendly_notes' => $job->disability_friendly_notes ?? '',
+                    'compatible_disabilities' => $job->disabilityCompatibility
+                        ->where('compatibility_level', 'compatible')
+                        ->pluck('disability_type')
+                        ->values()
+                        ->toArray(),
                 ];
             })
             ->toArray();
@@ -45,13 +52,13 @@ class RecommendationService
                 'mobility_status' => $registry->mobility_status ?? '',
                 'current_assistive_device' => $registry->current_assistive_device ?? 'None',
                 'skills' => $profile->skills->pluck('skill_name')->implode(', '),
-                'preferred_employment_type' => $prediction->predicted_employment_type,
+                'preferred_employment_type' => $prediction->predicted_type,
                 'preferred_job_category' => '',
                 'educational_attainment' => $registry->educational_attainment ?? $profile->education ?? '',
                 'occupation_group' => $registry->occupation_group ?? '',
             ],
             'available_jobs' => $availableJobs,
-            'predicted_employment_type' => $prediction->predicted_employment_type,
+            'predicted_employment_type' => $prediction->predicted_type,
             'top_n' => 5,
         ];
 
@@ -64,7 +71,9 @@ class RecommendationService
                 'pwd_profile_id' => $profile->id,
                 'job_post_id' => $rec['job_id'],
                 'similarity_score' => $rec['similarity_score'],
-                'recommendation_rank' => $rec['rank_position'],
+                'rank_position' => $rec['rank_position'],
+                'recommendation_reason' => $rec['recommendation_reason'] ?? null,
+                'generated_at' => now(),
             ]);
         }
 
