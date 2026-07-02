@@ -28,7 +28,7 @@
 
                         <p>
                             Current Status:
-                            <strong>{{ $application->application_status }}</strong>
+                            <strong>{{ ucwords(str_replace('_', ' ', $application->status)) }}</strong>
                         </p>
 
                         <p>
@@ -43,10 +43,17 @@
                             @method('PATCH')
 
                             <select name="application_status" class="border rounded px-3 py-1">
-                                @foreach(['Pending', 'Interview', 'Accepted', 'Rejected'] as $status)
-                                    <option value="{{ $status }}"
-                                        {{ $application->application_status === $status ? 'selected' : '' }}>
-                                        {{ $status }}
+                                @foreach([
+                                    'applied' => 'Applied',
+                                    'under_review' => 'Under Review',
+                                    'shortlisted' => 'Shortlisted',
+                                    'interview' => 'Interview',
+                                    'accepted' => 'Accepted',
+                                    'rejected' => 'Rejected',
+                                    'withdrawn' => 'Withdrawn',
+                                ] as $status => $label)
+                                    <option value="{{ $status }}" {{ $application->status === $status ? 'selected' : '' }}>
+                                        {{ $label }}
                                     </option>
                                 @endforeach
                             </select>

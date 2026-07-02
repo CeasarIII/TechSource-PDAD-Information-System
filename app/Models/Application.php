@@ -13,6 +13,8 @@ class Application extends Model
 
     protected $casts = [
         'applied_at' => 'datetime',
+        'status_updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     public function pwdProfile(): BelongsTo
